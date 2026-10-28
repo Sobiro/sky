@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Созвездие Кэтрин</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#0a0f1f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Golos+Text:wght@400;500&display=swap">
+<style>
+/* Concept: ночное небо. Пять звёзд загораются по одной и соединяются в созвездие. Текст печатается под небом. Единственный смелый ход: само созвездие. */
+:root {
+  --bg: #0a0f1f;
+  --bg-glow: #1a2244;
+  --fg: #efe8dc;
+  --muted: #98a0ba;
+  --star: #f6e6bd;
+  --accent: #eaa7a2;
+  --accent-line: rgba(234, 167, 162, 0.6);
+  --accent-soft: rgba(234, 167, 162, 0.14);
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-body: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: radial-gradient(120% 70% at 50% 0%, var(--bg-glow), var(--bg) 68%), var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  overflow: hidden;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+#sky {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.panel {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 24px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 32px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+.panel > * { pointer-events: auto; }
+
+body[data-phase="star"] .panel,
+body[data-phase="final"] .panel { justify-content: flex-end; }
+
+.copy {
+  width: 100%;
+  max-width: 34rem;
+  min-width: 0;
+  transition: opacity 0.38s ease, transform 0.38s ease;
+}
+.copy.out { opacity: 0; transform: translateY(8px); }
+
+.kicker {
+  margin: 0 0 0.9rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(3.6rem, 17vw, 6.4rem);
+  line-height: 1;
+  color: var(--star);
+  text-wrap: balance;
+}
+body[data-phase="star"] .title,
+body[data-phase="final"] .title {
+  font-size: clamp(2.1rem, 8.4vw, 3.2rem);
+  line-height: 1.08;
+}
+
+.text {
+  margin: 1.1rem auto 0;
+  max-width: 30rem;
+  font-size: 1.06rem;
+  line-height: 1.65;
+  color: var(--fg);
+  text-wrap: pretty;
+}
+.text p { margin: 0 0 0.9rem; }
+.text p:last-child { margin-bottom: 0; }
+.ghost { visibility: hidden; }
+
+body[data-phase="intro"] .text { margin-top: 0; max-width: 26rem; }
+body[data-phase="intro"] .text p {
+  margin-bottom: 1.3rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(1.55rem, 6.4vw, 2.1rem);
+  line-height: 1.3;
+}
+.text .sign {
+  margin-top: 1.4rem;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+
+.go {
+  margin-top: 1.8rem;
+  min-height: 48px;
+  padding: 0 1.9rem;
+  font: 500 0.78rem/1 var(--font-body);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease, visibility 0.6s ease, background 0.25s ease;
+}
+.go.show { opacity: 1; visibility: visible; }
+.go:hover { background: var(--accent-soft); }
+.go:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .copy, .go { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+
+<main class="panel">
+  <div class="copy" id="copy" aria-live="polite">
+    <p class="kicker" id="kicker">Для Кэтрин</p>
+    <h1 class="title" id="title">Кэтрин</h1>
+    <div class="text" id="text"><p>Здесь небо. И в нём кое-что для тебя.</p></div>
+  </div>
+  <button class="go show" id="go" type="button">Открыть</button>
+</main>
+
+<script>
+/* Тексты можно менять здесь. Остальное трогать не нужно. */
+const CONFIG = {
+  name: "Кэтрин",
+  from: "Твой Лансик",
+  intro: [
+    "Привет, Кэтрин.",
+    "Это не просто сайт.",
+    "Я долго думал, как сказать тебе всё это не как все.",
+    "Поэтому смотри наверх. Это небо. И каждая звезда в нём про тебя."
+  ],
+  stars: [
+    { t: "Ты просто появилась", b: "Два месяца назад, в обычной соцсети. Я не искал ничего особенного, а нашёл человека, с которым стало легко. И я до сих пор не понимаю, как так вышло." },
+    { t: "С тобой смешно", b: "Мы шутим про такую ерунду, что нормальному человеку не объяснить. И мне это нравится больше любых умных разговоров." },
+    { t: "Ты моя дурёха", b: "Да, я называю тебя глупой. Ты же знаешь, что в моих устах это самое нежное слово. Так что ты моя дурёха, и это навсегда." },
+    { t: "Рядом с тобой тепло", b: "Рядом с тобой мне спокойнее. Хочется быть лучше. Не потому что надо, а потому что ты этого стоишь." },
+    { t: "Ты красивая", b: "Не только снаружи. Ты красивая, когда смеёшься, когда злишься на мои шутки и когда делаешь вид, что не злишься." }
+  ],
+  final: {
+    title: "Ты моя любимая",
+    lines: [
+      "Кэтрин, прошло всего два месяца, а я уже не представляю, как это было без тебя.",
+      "Спасибо, что ты есть. Правда."
+    ]
+  }
+};
+
+const $ = (id) => document.getElementById(id);
+const copy = $("copy"), kicker = $("kicker"), title = $("title"), textEl = $("text"), go = $("go");
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* ---------- Небо ---------- */
+const cv = $("sky"), ctx = cv.getContext("2d");
+const css = getComputedStyle(document.documentElement);
+const hex = (h) => { const n = parseInt(h.trim().slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const STAR = hex(css.getPropertyValue("--star"));
+const ACC = hex(css.getPropertyValue("--accent"));
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+const SHAPE = [[0.1, 0.72], [0.32, 0.3], [0.52, 0.64], [0.73, 0.2], [0.9, 0.5]];
+const N = CONFIG.stars.length;
+const lit = new Array(N).fill(0), litT = new Array(N).fill(0);
+const seg = new Array(N - 1).fill(0), segT = new Array(N - 1).fill(0);
+let bloom = 0, bloomT = 0;
+let W = 0, H = 0, dpr = 1, field = [], pts = [], shoot = null;
+
+function layout() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const aw = Math.min(W - 56, 640), ax = (W - aw) / 2;
+  const ay = H * 0.11, ah = Math.min(H * 0.3, 250);
+  pts = SHAPE.map(([x, y]) => ({ x: ax + x * aw, y: ay + y * ah }));
+  const count = Math.round((W * H) / 5200);
+  field = Array.from({ length: count }, () => ({
+    x: Math.random() * W, y: Math.random() * H,
+    r: Math.random() * 1.1 + 0.3, a: Math.random() * 0.55 + 0.25,
+    sp: Math.random() * 0.0015 + 0.0006, ph: Math.random() * 6.283
+  }));
+}
+
+function launch() {
+  if (reduce) return;
+  shoot = { x: Math.random() * W * 0.6 + W * 0.15, y: Math.random() * H * 0.25, vx: 5 + Math.random() * 3, vy: 2.2 + Math.random() * 1.6, life: 1 };
+}
+
+function drawStar(p, k, t) {
+  if (k <= 0.01) {
+    ctx.fillStyle = rgba(STAR, 0.28);
+    ctx.beginPath(); ctx.arc(p.x, p.y, 1.7, 0, 6.283); ctx.fill();
+    return;
+  }
+  const pulse = reduce ? 1 : 1 + 0.08 * Math.sin(t * 0.003 + p.x);
+  const R = (22 + 10 * bloom) * k * pulse;
+  const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, R);
+  g.addColorStop(0, rgba(STAR, 0.55 * k));
+  g.addColorStop(1, rgba(STAR, 0));
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, 6.283); ctx.fill();
+  const L = (9 + 5 * bloom) * k;
+  ctx.strokeStyle = rgba(STAR, 0.8 * k); ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(p.x - L, p.y); ctx.lineTo(p.x + L, p.y);
+  ctx.moveTo(p.x, p.y - L); ctx.lineTo(p.x, p.y + L);
+  ctx.stroke();
+  ctx.fillStyle = rgba(STAR, 1);
+  ctx.beginPath(); ctx.arc(p.x, p.y, 2.4 + 0.8 * k, 0, 6.283); ctx.fill();
+}
+
+const smooth = (p) => p * p * (3 - 2 * p);
+
+function frame(t) {
+  ctx.clearRect(0, 0, W, H);
+  for (const s of field) {
+    const tw = reduce ? 0.75 : 0.55 + 0.45 * Math.sin(t * s.sp + s.ph);
+    ctx.fillStyle = rgba(STAR, s.a * tw);
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
+  }
+  if (shoot) {
+    const tail = 14;
+    const g = ctx.createLinearGradient(shoot.x, shoot.y, shoot.x - shoot.vx * tail, shoot.y - shoot.vy * tail);
+    g.addColorStop(0, rgba(STAR, 0.9 * shoot.life));
+    g.addColorStop(1, rgba(STAR, 0));
+    ctx.strokeStyle = g; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(shoot.x, shoot.y); ctx.lineTo(shoot.x - shoot.vx * tail, shoot.y - shoot.vy * tail); ctx.stroke();
+    shoot.x += shoot.vx; shoot.y += shoot.vy; shoot.life -= 0.018;
+    if (shoot.life <= 0) shoot = null;
+  }
+  ctx.lineWidth = 1.2; ctx.strokeStyle = rgba(ACC, 0.55);
+  for (let i = 0; i < N - 1; i++) {
+    seg[i] += (segT[i] - seg[i]) * 0.045;
+    if (seg[i] < 0.01) continue;
+    const e = smooth(Math.min(seg[i], 1));
+    const a = pts[i], b = pts[i + 1];
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(a.x + (b.x - a.x) * e, a.y + (b.y - a.y) * e); ctx.stroke();
+  }
+  bloom += (bloomT - bloom) * 0.03;
+  for (let i = 0; i < N; i++) {
+    lit[i] += (litT[i] - lit[i]) * 0.06;
+    drawStar(pts[i], lit[i], t);
+  }
+  requestAnimationFrame(frame);
+}
+
+function lightStar(i) {
+  if (i > 0) segT[i - 1] = 1;
+  if (reduce) { litT[i] = lit[i] = 1; if (i > 0) seg[i - 1] = 1; return; }
+  setTimeout(() => { litT[i] = 1; }, i > 0 ? 550 : 0);
+  launch();
+}
+
+function lightAll() {
+  for (let i = 0; i < N; i++) litT[i] = 1;
+  for (let i = 0; i < N - 1; i++) segT[i] = 1;
+  bloomT = 1;
+  if (reduce) { lit.fill(1); seg.fill(1); bloom = 1; }
+  else launch();
+}
+
+layout();
+window.addEventListener("resize", layout);
+requestAnimationFrame(frame);
+setInterval(() => { if (!shoot && !document.hidden) launch(); }, 7000);
+
+/* ---------- Текст и ход показа ---------- */
+let skip = false;
+document.addEventListener("pointerdown", () => { skip = true; });
+
+function prepare(el, text) {
+  el.textContent = "";
+  const a = document.createElement("span");
+  const b = document.createElement("span");
+  b.className = "ghost"; b.setAttribute("aria-hidden", "true"); b.textContent = text;
+  el.append(a, b);
+  return { a, b };
+}
+
+async function typeInto(el, text, speed = 32) {
+  const { a, b } = prepare(el, text);
+  if (reduce) { a.textContent = text; b.textContent = ""; return; }
+  skip = false;
+  for (let i = 0; i < text.length; i++) {
+    if (skip) break;
+    a.textContent = text.slice(0, i + 1);
+    b.textContent = text.slice(i + 1);
+    await sleep(speed + (",.…".includes(text[i]) ? 140 : 0));
+  }
+  a.textContent = text; b.textContent = "";
+}
+
+async function swap(fn) {
+  copy.classList.add("out");
+  await sleep(reduce ? 0 : 380);
+  fn();
+  copy.classList.remove("out");
+  await sleep(reduce ? 0 : 60);
+}
+
+function waitTap(label) {
+  return new Promise((resolve) => {
+    go.textContent = label;
+    go.disabled = false;
+    go.classList.add("show");
+    go.onclick = () => {
+      go.onclick = null;
+      go.disabled = true;
+      go.classList.remove("show");
+      resolve();
+    };
+  });
+}
+
+function setParagraphs(lines, extraClass) {
+  textEl.textContent = "";
+  return lines.map((line, i) => {
+    const p = document.createElement("p");
+    if (extraClass && i === lines.length - 1 && extraClass === "sign") p.className = "sign";
+    textEl.appendChild(p);
+    prepare(p, line);
+    return p;
+  });
+}
+
+async function main() {
+  await waitTap("Открыть");
+
+  await swap(() => {
+    document.body.dataset.phase = "intro";
+    kicker.hidden = true; title.hidden = true;
+  });
+  const introPs = setParagraphs(CONFIG.intro);
+  for (let i = 0; i < introPs.length; i++) {
+    await typeInto(introPs[i], CONFIG.intro[i], 36);
+    await sleep(reduce ? 0 : 650);
+  }
+  await waitTap("Дальше");
+
+  for (let i = 0; i < N; i++) {
+    const s = CONFIG.stars[i];
+    await swap(() => {
+      document.body.dataset.phase = "star";
+      kicker.hidden = false; title.hidden = false;
+      kicker.textContent = `Звезда ${i + 1} из ${N}`;
+      title.textContent = s.t;
+      textEl.textContent = "";
+      const p = document.createElement("p");
+      textEl.appendChild(p);
+      prepare(p, s.b);
+    });
+    lightStar(i);
+    await typeInto(textEl.firstChild, s.b, 28);
+    await waitTap(i < N - 1 ? "Следующая звезда" : "Дальше");
+  }
+
+  const lines = CONFIG.final.lines.concat([CONFIG.from]);
+  await swap(() => {
+    document.body.dataset.phase = "final";
+    kicker.hidden = false; title.hidden = false;
+    kicker.textContent = `Созвездие ${CONFIG.name} · ${N} звёзд`;
+    title.textContent = CONFIG.final.title;
+    setParagraphs(lines, "sign");
+  });
+  lightAll();
+  const ps = textEl.querySelectorAll("p");
+  for (let i = 0; i < ps.length; i++) {
+    await typeInto(ps[i], lines[i], i === ps.length - 1 ? 60 : 30);
+    await sleep(reduce ? 0 : 500);
+  }
+  await waitTap("Сначала");
+  location.reload();
+}
+
+main();
+</script>
+
+</body>
+</html>
